@@ -44,7 +44,7 @@ rtps:
   - id: 20
     msg: EkfGpsDrift
   - id: 21
-    msg: EkfGpsPosition
+    msg: SensorGps
   - id: 22
     msg: EscReport
   - id: 23
@@ -150,8 +150,6 @@ rtps:
     msg: SensorSelection
   - id: 71
     msg: Px4IoStatus
-  - id: 72
-    msg: SubsystemInfo
   - id: 73
     msg: SystemPower
   - id: 74
@@ -278,11 +276,19 @@ rtps:
   - id: 132
     msg: YawEstimatorStatus
   - id: 133
-    msg: TelemetryHeartbeat
-  - id: 134
     msg: SensorPreflightMag
-  - id: 135
+  - id: 134
     msg: EstimatorStates
+  - id: 135
+    msg: GeneratorStatus
+  - id: 136
+    msg: SensorGyroFft
+  - id: 137
+    msg: NavigatorMissionItem
+  - id: 138
+    msg: EstimatorOpticalFlowVel
+  - id: 139
+    msg: EstimatorSelectorStatus
   - alias: ActuatorControls
     id: 150
     msg: ActuatorControls0
@@ -344,7 +350,7 @@ rtps:
     msg: VehicleAngularVelocityGroundtruth
   - alias: VehicleOdometry
     id: 169
-    msg: VehicleVisualOdometryAligned
+    msg: EstimatorVisualOdometryAligned
   - alias: EstimatorInnovations
     id: 170
     msg: EstimatorInnovationVariances
@@ -363,3 +369,18 @@ rtps:
   - alias: OrbTestMedium
     id: 175
     msg: OrbTestMediumQueuePoll
+  - alias: OrbTestMedium
+    id: 176
+    msg: OrbTestMediumWrapAround
+  - alias: VehicleLocalPosition
+    id: 177
+    msg: EstimatorLocalPosition
+  - alias: VehicleGlobalPosition
+    id: 178
+    msg: EstimatorGlobalPosition
+  - alias: VehicleAttitude
+    id: 179
+    msg: EstimatorAttitude
+  - alias: VehicleOdometry
+    id: 180
+    msg: EstimatorOdometry
