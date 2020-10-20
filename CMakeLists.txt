@@ -92,6 +92,7 @@ target_link_libraries(micrortps_agent fastrtps fastcdr)
 # Add listeners
 custom_executable(listeners sensor_combined_listener)
 custom_executable(listeners vehicle_gps_position_listener)
+custom_executable(listeners vehicle_global_position_listener)
 
 # Add advertiser
 custom_executable(advertisers debug_vect_advertiser)
