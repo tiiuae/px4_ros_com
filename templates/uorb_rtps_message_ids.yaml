@@ -195,6 +195,7 @@ rtps:
     msg: VehicleControlMode
   - id: 93
     msg: VehicleGlobalPosition
+    send: true
   - id: 94
     msg: VehicleGpsPosition
   - id: 95
