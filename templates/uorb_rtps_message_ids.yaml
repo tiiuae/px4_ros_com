@@ -84,6 +84,7 @@ rtps:
     msg: Mission
   - id: 40
     msg: MissionResult
+    send: true
   - id: 41
     msg: MountOrientation
   - id: 42
