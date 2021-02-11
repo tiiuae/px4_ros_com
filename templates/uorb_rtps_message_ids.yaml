@@ -201,8 +201,10 @@ rtps:
     msg: VehicleGpsPosition
   - id: 95
     msg: VehicleLandDetected
+    send: true
   - id: 96
     msg: VehicleLocalPosition
+    send: true
   - id: 97
     msg: VehicleLocalPositionSetpoint
   - id: 98
