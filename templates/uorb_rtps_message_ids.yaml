@@ -45,6 +45,7 @@ rtps:
     msg: EkfGpsDrift
   - id: 21
     msg: SensorGps
+    receive: true
   - id: 22
     msg: EscReport
   - id: 23
