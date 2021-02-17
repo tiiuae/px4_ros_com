@@ -148,6 +148,7 @@ rtps:
     msg: SensorGyro
   - id: 68
     msg: SensorMag
+    send: true
   - id: 69
     msg: SensorsStatusImu
   - id: 70
