@@ -11,6 +11,7 @@ rtps:
     msg: Airspeed
   - id: 6
     msg: BatteryStatus
+    send: true
   - id: 7
     msg: CameraCapture
   - id: 8
@@ -225,6 +226,7 @@ rtps:
     msg: VehicleRoi
   - id: 102
     msg: VehicleStatus
+    send: true
   - id: 103
     msg: VehicleStatusFlags
   - id: 104
