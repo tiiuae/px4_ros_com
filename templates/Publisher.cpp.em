@@ -67,6 +67,7 @@ except AttributeError:
 #include <fastrtps/attributes/ParticipantAttributes.h>
 #include <fastrtps/publisher/Publisher.h>
 #include <fastrtps/attributes/PublisherAttributes.h>
+#include <fastrtps/transport/UDPv4TransportDescriptor.h>
 
 #include <fastrtps/Domain.h>
 
@@ -82,7 +83,7 @@ except AttributeError:
     Domain::removeParticipant(mp_participant);
 }
 
-bool @(topic)_Publisher::init(const std::string& ns)
+bool @(topic)_Publisher::init(const std::string& ns, const std::vector<std::string>& whitelist)
 {
     // Create RTPSParticipant
     ParticipantAttributes PParam;
@@ -99,6 +100,20 @@ bool @(topic)_Publisher::init(const std::string& ns)
     std::string nodeName = ns;
     nodeName.append("@(topic)_publisher");
     PParam.rtps.setName(nodeName.c_str());
+
+    if (!whitelist.empty()) {
+        //Create a descriptor for the new transport.
+        auto custom_transport = std::make_shared<UDPv4TransportDescriptor>();
+
+	    custom_transport->interfaceWhiteList = whitelist;
+
+        //Disable the built-in Transport Layer.
+        PParam.rtps.useBuiltinTransports = false;
+
+        //Link the Transport Layer to the Participant.
+        PParam.rtps.userTransports.push_back(custom_transport);
+    }
+
     mp_participant = Domain::createParticipant(PParam);
     if(mp_participant == nullptr)
         return false;
