@@ -31,23 +31,23 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# Check FastRTPSGen version
-fastrtpsgen_version_out=""
-if [[ -z $FASTRTPSGEN_DIR ]]; then
-  fastrtpsgen_version_out="$FASTRTPSGEN_DIR/$(fastrtpsgen -version)"
+# Check Fastddsgen version
+fastddsgen_version_out=""
+if [[ -z $FASTDDSGEN_DIR ]]; then
+  fastddsgen_version_out="$FASTDDSGEN_DIR/$(fastddsgen -version)"
 else
-  fastrtpsgen_version_out=$(fastrtpsgen -version)
+  fastddsgen_version_out=$(fastddsgen -version)
 fi
-if [[ -z $fastrtpsgen_version_out ]]; then
-  echo "FastRTPSGen not found! Please build and install FastRTPSGen..."
+if [[ -z $fastddsgen_version_out ]]; then
+  echo "Fastddsgen not found! Please build and install Fastddsgen..."
   exit 1
 else
-  fastrtpsgen_version="${fastrtpsgen_version_out: -5:-2}"
-  if ! [[ $fastrtpsgen_version =~ ^[0-9]+([.][0-9]+)?$ ]] ; then
-    fastrtpsgen_version="1.0"
-    [ ! -v $verbose ] && echo "FastRTPSGen version: ${fastrtpsgen_version}"
+  fastddsgen_version="${fastddsgen_version_out: -5:-2}"
+  if ! [[ $fastddsgen_version =~ ^[0-9]+([.][0-9]+)?$ ]] ; then
+    fastddsgen_version="1.0"
+    [ ! -v $verbose ] && echo "Fastddsgen version: ${fastddsgen_version}"
   else
-    [ ! -v $verbose ] && echo "FastRTPSGen version: ${fastrtpsgen_version_out: -5}"
+    [ ! -v $verbose ] && echo "Fastddsgen version: ${fastddsgen_version_out: -5}"
   fi
 fi
 
