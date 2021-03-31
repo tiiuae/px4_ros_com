@@ -33,37 +33,37 @@
 #       - templates/uorb_rtps_message_ids.yaml
 #       - scripts/uorb_rtps_classifier.py
 #       - scripts/generate_microRTPS_bridge.py
-#       - FASTRTPSGEN_DIR
+#       - FASTDDSGEN_DIR
 ##################################################################################
 
-# Check if FastRTPSGen exists
-if($ENV{FASTRTPSGEN_DIR})
-  message(STATUS "fastrtpsgen found in $ENV{FASTRTPSGEN_DIR}")
-  set(FASTRTPSGEN "$ENV{FASTRTPSGEN_DIR}/fastrtpsgen")
+# Check if Fastddsgen exists
+if($ENV{FASTDDSGEN_DIR})
+  message(STATUS "fastddsgen found in $ENV{FASTDDSGEN_DIR}")
+  set(FASTDDSGEN "$ENV{FASTDDSGEN_DIR}/fastddsgen")
 else()
-  find_file(FASTRTPSGEN NAMES fastrtpsgen PATH_SUFFIXES bin)
-  if(FASTRTPSGEN-NOTFOUND)
-    message(FATAL_ERROR "fastrtpsgen not found")
+  find_file(FASTDDSGEN NAMES fastddsgen PATH_SUFFIXES bin)
+  if(FASTDDSGEN-NOTFOUND)
+    message(FATAL_ERROR "fastddsgen not found")
   else()
-    get_filename_component(FASTRTPSGEN_DIR ${FASTRTPSGEN} DIRECTORY)
-    message(STATUS "fastrtpsgen found in ${FASTRTPSGEN_DIR}")
+    get_filename_component(FASTDDSGEN_DIR ${FASTDDSGEN} DIRECTORY)
+    message(STATUS "fastddsgen found in ${FASTDDSGEN_DIR}")
   endif()
 endif()
 
-# Get FastRTPSGen version
-set(FASTRTPSGEN_VERSION)
-execute_process(COMMAND fastrtpsgen -version
-                OUTPUT_VARIABLE FASTRTPSGEN_VERSION_OUTPUT
+# Get Fastddsgen version
+set(FASTDDSGEN_VERSION)
+execute_process(COMMAND fastddsgen -version
+                OUTPUT_VARIABLE FASTDDSGEN_VERSION_OUTPUT
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
 string(REGEX MATCH
              "([0-9]+)\\.([0-9]+)\\.([0-9]+)$"
-             FASTRTPSGEN_VERSION
-             "${FASTRTPSGEN_VERSION_OUTPUT}")
-# If the above command fails, force FastRTPSGen to 1.0.0
-if(NOT FASTRTPSGEN_VERSION)
-  set(FASTRTPSGEN_VERSION "1.0.0")
+             FASTDDSGEN_VERSION
+             "${FASTDDSGEN_VERSION_OUTPUT}")
+# If the above command fails, force Fastddsgen to 1.0.0
+if(NOT FASTDDSGEN_VERSION)
+  set(FASTDDSGEN_VERSION "1.0.0")
 endif()
-message(STATUS "fastrtpsgen version ${FASTRTPSGEN_VERSION}")
+message(STATUS "fastddsgen version ${FASTDDSGEN_VERSION}")
 
 # Find ROS distro
 set(ROS_DISTRO)
@@ -162,13 +162,13 @@ list(APPEND MICRORTPS_AGENT_FILES ${MICRORTPS_AGENT_DIR}/RtpsTopics.cpp)
 
 set(ALL_TOPIC_NAMES ${CONFIG_RTPS_SEND_TOPICS} ${CONFIG_RTPS_RECEIVE_TOPICS})
 foreach(topic ${ALL_TOPIC_NAMES})
-  # Requires differentiation between FastRTPSGen versions
-  if(FASTRTPSGEN_VERSION VERSION_GREATER 1.4 AND FASTRTPSGEN_VERSION VERSION_LESS 1.8)
+  # Requires differentiation between Fastddsgen versions
+  if(FASTDDSGEN_VERSION VERSION_GREATER 1.4 AND FASTDDSGEN_VERSION VERSION_LESS 1.8)
     list(APPEND MICRORTPS_AGENT_FILES ${MICRORTPS_AGENT_DIR}/${topic}_.cpp)
   else()
     list(APPEND MICRORTPS_AGENT_FILES ${MICRORTPS_AGENT_DIR}/${topic}.cpp)
   endif()
-  if(FASTRTPSGEN_VERSION VERSION_GREATER 1.4 AND FASTRTPSGEN_VERSION VERSION_LESS 1.8)
+  if(FASTDDSGEN_VERSION VERSION_GREATER 1.4 AND FASTDDSGEN_VERSION VERSION_LESS 1.8)
     list(APPEND MICRORTPS_AGENT_FILES
                 ${MICRORTPS_AGENT_DIR}/${topic}_PubSubTypes.cpp)
     list(APPEND MICRORTPS_AGENT_FILES
@@ -196,11 +196,11 @@ foreach(topic ${CONFIG_RTPS_SEND_TOPICS}) # advertised topics should first be
     APPEND MICRORTPS_AGENT_FILES ${MICRORTPS_AGENT_DIR}/${topic}_Subscriber.h)
 endforeach()
 
-message(STATUS "fastrtpsgen found in $ENV{FASTRTPSGEN_DIR}")
+message(STATUS "fastddsgen found in $ENV{FASTDDSGEN_DIR}")
 message(STATUS "px4_msgs message dir under ${MSGS_DIR}")
 
 set(IDL_DIR)
-if(FASTRTPSGEN_VERSION VERSION_GREATER 1.4 AND FASTRTPSGEN_VERSION VERSION_LESS 1.8)
+if(FASTDDSGEN_VERSION VERSION_GREATER 1.4 AND FASTDDSGEN_VERSION VERSION_LESS 1.8)
   set(IDL_DIR "${MSGS_DIR}/dds_fastrtps")
 else()
   set(IDL_DIR "${MSGS_DIR}")
@@ -208,16 +208,16 @@ endif()
 
 message(STATUS "IDL definitions under ${IDL_DIR}")
 
-get_filename_component(px4_msgs_FASTRTPSGEN_INCLUDE "../../" ABSOLUTE BASE_DIR ${px4_msgs_DIR})
+get_filename_component(px4_msgs_FASTDDSGEN_INCLUDE "../../" ABSOLUTE BASE_DIR ${px4_msgs_DIR})
 add_custom_command(
   OUTPUT  ${MICRORTPS_AGENT_FILES}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_microRTPS_bridge.py
-          $ENV{FASTRTPSGEN_DIR}
+          $ENV{FASTDDSGEN_DIR}
   COMMAND
     ${PYTHON_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_microRTPS_bridge.py
-    --fastrtpsgen-dir $ENV{FASTRTPSGEN_DIR}
-    --fastrtpsgen-include ${px4_msgs_FASTRTPSGEN_INCLUDE}
+    --fastddsgen-dir $ENV{FASTDDSGEN_DIR}
+    --fastddsgen-include ${px4_msgs_FASTDDSGEN_INCLUDE}
     --topic-msg-dir ${MSGS_DIR}
     --urtps-templates-dir ${CMAKE_CURRENT_SOURCE_DIR}/templates
     --rtps-ids-file ${CMAKE_CURRENT_SOURCE_DIR}/templates/uorb_rtps_message_ids.yaml
