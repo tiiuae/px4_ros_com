@@ -114,8 +114,8 @@ else
   git clone --recursive https://github.com/eProsima/Fast-RTPS-Gen.git -b v1.0.4 /tmp/Fast-RTPS-Gen \
     && cd /tmp/Fast-RTPS-Gen \
     && gradle assemble \
-    && sudo cp share/fastrtps/fastrtpsgen.jar /usr/local/share/fastrtps/ \
-    && sudo cp scripts/fastrtpsgen /usr/local/bin/ \
+    && sudo cp share/fastrtps/fastddsgen.jar /usr/local/share/fastrtps/ \
+    && sudo cp scripts/fastddsgen /usr/local/bin/ \
     && cd $PWD
 fi
 
