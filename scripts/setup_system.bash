@@ -93,9 +93,9 @@ else
       && make --build . --target install \
       && cd $PWD
   elif [ $ROS2_DISTRO == "foxy" ]; then
-    # Install Fast-RTPS 1.10.0
-    git clone --recursive https://github.com/eProsima/Fast-RTPS.git -b v1.10.0 /tmp/FastRTPS-1.10.0 \
-      && cd /tmp/FastRTPS-1.10.0 \
+    # Install Fast-RTPS 2.0.2
+    git clone --recursive https://github.com/eProsima/Fast-RTPS.git -b v2.0.2 /tmp/FastRTPS-2.0.2 \
+      && cd /tmp/FastRTPS-2.0.2 \
       && mkdir build && cd build \
       && cmake -DTHIRDPARTY=ON -DSECURITY=ON .. \
       && make --build . --target install \
