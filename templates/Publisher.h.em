@@ -77,6 +77,7 @@ except AttributeError:
 
 using namespace eprosima::fastrtps;
 using namespace eprosima::fastrtps::rtps;
+using namespace eprosima::fastdds::dds;
 
 @[if version.parse(fastrtps_version) <= version.parse('1.7.2')]@
 @[    if ros2_distro]@
