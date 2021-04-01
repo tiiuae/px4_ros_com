@@ -206,6 +206,7 @@ rtps:
     send: true
   - id: 94
     msg: VehicleGpsPosition
+    send: true
   - id: 95
     msg: VehicleLandDetected
     send: true
