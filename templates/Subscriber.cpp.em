@@ -112,6 +112,8 @@ bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable* t_send
 
     // Create Subscriber
     SubscriberAttributes Rparam;
+    Rparam.qos.m_durability.durabilityKind(VOLATILE);
+    Rparam.qos.m_reliability.kind = eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS;
     Rparam.topic.topicKind = NO_KEY;
     Rparam.topic.topicDataType = @(topic)DataType.getName();
 @[if ros2_distro]@

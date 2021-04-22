@@ -108,6 +108,8 @@ bool @(topic)_Publisher::init(const std::string& ns)
 
     // Create Publisher
     PublisherAttributes Wparam;
+    Wparam.qos.m_durability.durabilityKind(VOLATILE);
+    Wparam.qos.m_reliability.kind = eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS;
     Wparam.topic.topicKind = NO_KEY;
     Wparam.topic.topicDataType = @(topic)DataType.getName();
 @[if ros2_distro]@
