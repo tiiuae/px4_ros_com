@@ -86,6 +86,7 @@ bool @(topic)_Publisher::init(const std::string& ns)
 {
     // Create RTPSParticipant
     ParticipantAttributes PParam;
+    Domain::getDefaultParticipantAttributes(PParam);
 @[if version.parse(fastrtps_version) < version.parse('2.0')]@
     PParam.rtps.builtin.domainId = 0;
 @[else]@
@@ -108,6 +109,7 @@ bool @(topic)_Publisher::init(const std::string& ns)
 
     // Create Publisher
     PublisherAttributes Wparam;
+    Domain::getDefaultPublisherAttributes(Wparam);
     Wparam.topic.topicKind = NO_KEY;
     Wparam.topic.topicDataType = @(topic)DataType.getName();
 @[if ros2_distro]@

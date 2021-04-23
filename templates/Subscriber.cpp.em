@@ -90,6 +90,7 @@ bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable* t_send
 
     // Create RTPSParticipant
     ParticipantAttributes PParam;
+    Domain::getDefaultParticipantAttributes(PParam);
 @[if version.parse(fastrtps_version) < version.parse('2.0')]@
     PParam.rtps.builtin.domainId = 0;
 @[else]@
@@ -112,6 +113,7 @@ bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable* t_send
 
     // Create Subscriber
     SubscriberAttributes Rparam;
+    Domain::getDefaultSubscriberAttributes(Rparam);
     Rparam.topic.topicKind = NO_KEY;
     Rparam.topic.topicDataType = @(topic)DataType.getName();
 @[if ros2_distro]@
