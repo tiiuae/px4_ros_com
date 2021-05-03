@@ -62,119 +62,102 @@ except AttributeError:
  * This file was adapted from the fastcdrgen tool.
  */
 
-
-#include <fastrtps/participant/Participant.h>
-#include <fastrtps/attributes/ParticipantAttributes.h>
-#include <fastrtps/publisher/Publisher.h>
-#include <fastrtps/attributes/PublisherAttributes.h>
-#include <fastrtps/transport/UDPv4TransportDescriptor.h>
-
-#include <fastrtps/Domain.h>
-
 #include "@(topic)_Publisher.h"
+
+#include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+#include <fastdds/dds/topic/TypeSupport.hpp>
+#include <fastdds/dds/publisher/Publisher.hpp>
 
 @(topic)_Publisher::@(topic)_Publisher()
     : mp_participant(nullptr),
-      mp_publisher(nullptr)
+      mp_publisher(nullptr),
+      mp_topic(nullptr),
+      mp_writer(nullptr),
+      mp_type(new @(topic)_msg_datatype())
 { }
 
 @(topic)_Publisher::~@(topic)_Publisher()
 {
-    Domain::removeParticipant(mp_participant);
+    if (mp_writer != nullptr)
+    {
+        mp_publisher->delete_datawriter(mp_writer);
+    }
+    if (mp_publisher != nullptr)
+    {
+        mp_participant->delete_publisher(mp_publisher);
+    }
+    if (mp_topic != nullptr)
+    {
+        mp_participant->delete_topic(mp_topic);
+    }
+    DomainParticipantFactory::get_instance()->delete_participant(mp_participant);
 }
 
-bool @(topic)_Publisher::init(const std::string& ns, const std::vector<std::string>& whitelist)
+bool @(topic)_Publisher::init(const std::string& ns)
 {
-    // Create RTPSParticipant
-    ParticipantAttributes PParam;
-    Domain::getDefaultParticipantAttributes(PParam);
-@[if version.parse(fastrtps_version) < version.parse('2.0')]@
-    PParam.rtps.builtin.domainId = 0;
-@[else]@
-    PParam.domainId = 0;
-@[end if]@
-@[if version.parse(fastrtps_version) <= version.parse('1.8.4')]@
-    PParam.rtps.builtin.leaseDuration = c_TimeInfinite;
-@[else]@
-    PParam.rtps.builtin.discovery_config.leaseDuration = c_TimeInfinite;
-@[end if]@
+    // Create DomainParticipant
+    DomainParticipantQos participantQos;
     std::string nodeName = ns;
     nodeName.append("@(topic)_publisher");
-    PParam.rtps.setName(nodeName.c_str());
-
-    if (!whitelist.empty()) {
-        //Create a descriptor for the new transport.
-        auto custom_transport = std::make_shared<UDPv4TransportDescriptor>();
-
-	    custom_transport->interfaceWhiteList = whitelist;
-
-        //Disable the built-in Transport Layer.
-        PParam.rtps.useBuiltinTransports = false;
-
-        //Link the Transport Layer to the Participant.
-        PParam.rtps.userTransports.push_back(custom_transport);
-    }
-
-    mp_participant = Domain::createParticipant(PParam);
+    participantQos.name(nodeName.c_str());
+    mp_participant = DomainParticipantFactory::get_instance()->create_participant(0, participantQos);
     if(mp_participant == nullptr)
         return false;
 
     // Register the type
-    Domain::registerType(mp_participant, static_cast<TopicDataType*>(&@(topic)DataType));
+    mp_type.register_type(mp_participant);
 
-    // Create Publisher
-    PublisherAttributes Wparam;
-    Domain::getDefaultPublisherAttributes(Wparam);
-    Wparam.topic.topicKind = NO_KEY;
-    Wparam.topic.topicDataType = @(topic)DataType.getName();
-@[if ros2_distro]@
-@[    if ros2_distro == "ardent"]@
-    Wparam.qos.m_partition.push_back("rt");
-    std::string topicName = ns;
-    topicName.append("@(topic)_PubSubTopic");
-    Wparam.topic.topicName = topicName;
-@[    else]@
-    std::string topicName = "rt/";
+    // Create the publications Topic
+    std::string topicName = "rt/"; // Indicate ROS2 that this is user topic
     topicName.append(ns);
     topicName.append("@(topic)_PubSubTopic");
-    Wparam.topic.topicName = topicName;
-@[    end if]@
-@[else]@
-    std::string topicName = ns;
-    topicName.append("@(topic)PubSubTopic");
-    Wparam.topic.topicName = topicName;
-@[end if]@
-    mp_publisher = Domain::createPublisher(mp_participant, Wparam, static_cast<PublisherListener*>(&m_listener));
+    mp_topic = mp_participant->create_topic(topicName.c_str(), mp_type.get_type_name(), TOPIC_QOS_DEFAULT);
+    if(mp_topic == nullptr)
+        return false;
+
+    // Create the Publisher
+    mp_publisher = mp_participant->create_publisher(PUBLISHER_QOS_DEFAULT, nullptr);
     if(mp_publisher == nullptr)
         return false;
+
+    // Create the DataWriter
+    mp_writer = mp_publisher->create_datawriter(mp_topic, DATAWRITER_QOS_DEFAULT, &m_listener);
+
+    if (mp_writer == nullptr)
+    {
+        return false;
+    }
     return true;
 }
 
-void @(topic)_Publisher::PubListener::onPublicationMatched(Publisher* pub, MatchingInfo& info)
+void @(topic)_Publisher::PubListener::on_publication_matched(DataWriter*,
+                const PublicationMatchedStatus& info)
 {
-    // The first 6 values of the ID guidPrefix of an entity in a DDS-RTPS Domain
-    // are the same for all its subcomponents (publishers, subscribers)
-    bool is_different_endpoint = false;
-    for (size_t i = 0; i < 6; i++) {
-        if (pub->getGuid().guidPrefix.value[i] != info.remoteEndpointGuid.guidPrefix.value[i]) {
-            is_different_endpoint = true;
-            break;
-        }
-    }
 
-    // If the matching happens for the same entity, do not make a match
-    if (is_different_endpoint) {
-        if (info.status == MATCHED_MATCHING) {
-            n_matched++;
-            std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) publisher matched\033[0m" << std::endl;
-        } else {
-            n_matched--;
-            std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) publisher unmatched\033[0m" << std::endl;
-        }
+    if (info.current_count_change == 1)
+    {
+        n_matched = info.total_count;
+        std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) publisher matched\033[0m" << std::endl;
+    }
+    else if (info.current_count_change == -1)
+    {
+        n_matched = info.total_count;
+        std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) publisher unmatched\033[0m" << std::endl;
+    }
+    else
+    {
+        std::cout << "\033[0;37m[   micrortps_agent   ]\t @(topic) publisher: " << info.current_count_change
+                << " is not a valid value for PublicationMatchedStatus current count change.\033[0m" << std::endl;
     }
 }
 
 void @(topic)_Publisher::publish(@(topic)_msg_t* st)
 {
-    mp_publisher->write(st);
+    if (m_listener.n_matched > 0)
+    {
+        mp_writer->write(st);
+        // return true;
+        return;
+    }
+    //return false;
 }

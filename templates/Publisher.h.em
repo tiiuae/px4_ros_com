@@ -66,8 +66,9 @@ except AttributeError:
 #ifndef _@(topic)__PUBLISHER_H_
 #define _@(topic)__PUBLISHER_H_
 
-#include <fastrtps/fastrtps_fwd.h>
-#include <fastrtps/publisher/PublisherListener.h>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <fastdds/dds/publisher/DataWriter.hpp>
+#include <fastdds/dds/publisher/DataWriterListener.hpp>
 
 @[if version.parse(fastrtps_version) <= version.parse('1.7.2')]@
 #include "@(topic)_PubSubTypes.h"
@@ -75,8 +76,6 @@ except AttributeError:
 #include "@(topic)PubSubTypes.h"
 @[end if]@
 
-using namespace eprosima::fastrtps;
-using namespace eprosima::fastrtps::rtps;
 using namespace eprosima::fastdds::dds;
 
 @[if version.parse(fastrtps_version) <= version.parse('1.7.2')]@
@@ -102,22 +101,24 @@ class @(topic)_Publisher
 public:
     @(topic)_Publisher();
     virtual ~@(topic)_Publisher();
-    bool init(const std::string& ns, const std::vector<std::string>& whitelist);
+    bool init(const std::string& ns);
     void run();
     void publish(@(topic)_msg_t* st);
 private:
-    Participant *mp_participant;
+    DomainParticipant *mp_participant;
     Publisher *mp_publisher;
+    Topic *mp_topic;
+    DataWriter *mp_writer;
+    TypeSupport mp_type;
 
-    class PubListener : public PublisherListener
+    class PubListener : public DataWriterListener
     {
     public:
         PubListener() : n_matched(0){};
         ~PubListener(){};
-        void onPublicationMatched(Publisher* pub, MatchingInfo& info);
-        int n_matched;
+        void on_publication_matched(DataWriter*, const PublicationMatchedStatus& info);
+        std::atomic_int n_matched;
     } m_listener;
-    @(topic)_msg_datatype @(topic)DataType;
 };
 
 #endif // _@(topic)__PUBLISHER_H_

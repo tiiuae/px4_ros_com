@@ -62,23 +62,38 @@ except AttributeError:
  * This file was adapted from the fastcdrgen tool.
  */
 
-#include <fastrtps/participant/Participant.h>
-#include <fastrtps/attributes/ParticipantAttributes.h>
-#include <fastrtps/subscriber/Subscriber.h>
-#include <fastrtps/attributes/SubscriberAttributes.h>
-
-#include <fastrtps/Domain.h>
-
 #include "@(topic)_Subscriber.h"
+
+#include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+#include <fastdds/dds/topic/TypeSupport.hpp>
+#include <fastdds/dds/subscriber/Subscriber.hpp>
+#include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
 
 @(topic)_Subscriber::@(topic)_Subscriber()
     : mp_participant(nullptr),
-      mp_subscriber(nullptr)
+      mp_subscriber(nullptr),
+      mp_reader(nullptr),
+      mp_topic(nullptr),
+      mp_type(new @(topic)_msg_datatype())
 { }
 
 @(topic)_Subscriber::~@(topic)_Subscriber()
 {
-    Domain::removeParticipant(mp_participant);
+    if (mp_reader != nullptr)
+    {
+        mp_subscriber->delete_datareader(mp_reader);
+    }
+    if (mp_topic != nullptr)
+    {
+        mp_participant->delete_topic(mp_topic);
+    }
+    if (mp_subscriber != nullptr)
+    {
+        mp_participant->delete_subscriber(mp_subscriber);
+    }
+    DomainParticipantFactory::get_instance()->delete_participant(mp_participant);
+
 }
 
 bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable* t_send_queue_cv, std::mutex* t_send_queue_mutex, std::queue<uint8_t>* t_send_queue, const std::string& ns)
@@ -88,108 +103,90 @@ bool @(topic)_Subscriber::init(uint8_t topic_ID, std::condition_variable* t_send
     m_listener.t_send_queue_mutex = t_send_queue_mutex;
     m_listener.t_send_queue = t_send_queue;
 
-    // Create RTPSParticipant
-    ParticipantAttributes PParam;
-    Domain::getDefaultParticipantAttributes(PParam);
-@[if version.parse(fastrtps_version) < version.parse('2.0')]@
-    PParam.rtps.builtin.domainId = 0;
-@[else]@
-    PParam.domainId = 0;
-@[end if]@
-@[if version.parse(fastrtps_version) <= version.parse('1.8.4')]@
-    PParam.rtps.builtin.leaseDuration = c_TimeInfinite;
-@[else]@
-    PParam.rtps.builtin.discovery_config.leaseDuration = c_TimeInfinite;
-@[end if]@
+    // Create Participant
     std::string nodeName = ns;
     nodeName.append("@(topic)_subscriber");
-    PParam.rtps.setName(nodeName.c_str());
-    mp_participant = Domain::createParticipant(PParam);
+    DomainParticipantQos participantQos;
+    participantQos.name(nodeName.c_str());
+    mp_participant = DomainParticipantFactory::get_instance()->create_participant(0, participantQos);
     if(mp_participant == nullptr)
-            return false;
+    {
+        return false;
+    }
 
     //Register the type
-    Domain::registerType(mp_participant, static_cast<TopicDataType*>(&@(topic)DataType));
+    mp_type.register_type(mp_participant);
 
-    // Create Subscriber
-    SubscriberAttributes Rparam;
-    Domain::getDefaultSubscriberAttributes(Rparam);
-    Rparam.topic.topicKind = NO_KEY;
-    Rparam.topic.topicDataType = @(topic)DataType.getName();
-@[if ros2_distro]@
-@[    if ros2_distro == "ardent"]@
-    Rparam.qos.m_partition.push_back("rt");
-    std::string topicName = ns;
-    topicName.append("@(topic)_PubSubTopic");
-    Rparam.topic.topicName = topicName;
-@[    else]@
+    // Create subscription topic
+
     std::string topicName = "rt/";
     topicName.append(ns);
     topicName.append("@(topic)_PubSubTopic");
-    Rparam.topic.topicName = topicName;
-@[    end if]@
-@[else]@
-    std::string topicName = ns;
-    topicName.append("@(topic)PubSubTopic");
-    Rparam.topic.topicName = topicName;
-@[end if]@
-    mp_subscriber = Domain::createSubscriber(mp_participant, Rparam, static_cast<SubscriberListener*>(&m_listener));
-    if(mp_subscriber == nullptr)
+    mp_topic = mp_participant->create_topic(topicName.c_str(), mp_type.get_type_name(), TOPIC_QOS_DEFAULT);
+    if (mp_topic == nullptr)
+    {
         return false;
+    }
+
+    // Create Subscriber
+    mp_subscriber = mp_participant->create_subscriber(SUBSCRIBER_QOS_DEFAULT, nullptr);
+    if (mp_subscriber == nullptr)
+    {
+        return false;
+    }
+
+    // Create the DataReader
+    mp_reader = mp_subscriber->create_datareader(mp_topic, DATAREADER_QOS_DEFAULT, &m_listener);
+    if (mp_reader == nullptr)
+    {
+        return false;
+    }
+
     return true;
 }
 
-void @(topic)_Subscriber::SubListener::onSubscriptionMatched(Subscriber* sub, MatchingInfo& info)
+void @(topic)_Subscriber::SubListener::on_subscription_matched(DataReader*,
+                const SubscriptionMatchedStatus& info)
 {
 @# Since the time sync runs on the bridge itself, it is required that there is a
 @# match between two topics of the same entity
 @[if topic != 'Timesync' and topic != 'timesync']@
-    // The first 6 values of the ID guidPrefix of an entity in a DDS-RTPS Domain
-    // are the same for all its subcomponents (publishers, subscribers)
-    bool is_different_endpoint = false;
-    for (size_t i = 0; i < 6; i++) {
-        if (sub->getGuid().guidPrefix.value[i] != info.remoteEndpointGuid.guidPrefix.value[i]) {
-            is_different_endpoint = true;
-            break;
-        }
+    if (info.current_count_change == 1)
+    {
+        n_matched = info.total_count;
+        std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) subscriber matched\033[0m" << std::endl;
+    }
+    else if (info.current_count_change == -1)
+    {
+        n_matched = info.total_count;
+        std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) subscriber unmatched\033[0m" << std::endl;
+    }
+    else
+    {
+        std::cout << "\033[0;37m[   micrortps_agent   ]\t @(topic) publisher: " << info.current_count_change
+                << " is not a valid value for SubscriptionMatchedStatus current count change.\033[0m" << std::endl;
     }
 
-    // If the matching happens for the same entity, do not make a match
-    if (is_different_endpoint) {
-        if (info.status == MATCHED_MATCHING) {
-            n_matched++;
-            std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) subscriber matched\033[0m" << std::endl;
-        } else {
-            n_matched--;
-            std::cout << "\033[0;37m[   micrortps_agent   ]\t@(topic) subscriber unmatched\033[0m" << std::endl;
-        }
-    }
 @[else]@
-    (void)sub;
+    n_matched = info.total_count;
 
-    if (info.status == MATCHED_MATCHING) {
-        n_matched++;
-    } else {
-        n_matched--;
-    }
 @[end if]@
 }
 
-void @(topic)_Subscriber::SubListener::onNewDataMessage(Subscriber* sub)
+void @(topic)_Subscriber::SubListener::on_data_available(
+                DataReader* reader)
 {
-    if (n_matched > 0) {
-        std::unique_lock<std::mutex> has_msg_lock(has_msg_mutex);
-        if(has_msg.load() == true) // Check if msg has been fetched
-        {
-            has_msg_cv.wait(has_msg_lock); // Wait till msg has been fetched
-        }
-        has_msg_lock.unlock();
+    std::unique_lock<std::mutex> has_msg_lock(has_msg_mutex);
+    if(has_msg.load() == true) // Check if msg has been fetched
+    {
+        has_msg_cv.wait(has_msg_lock); // Wait till msg has been fetched
+    }
+    has_msg_lock.unlock();
 
-        // Take data
-        if(sub->takeNextData(&msg, &m_info))
+    if (reader->take_next_sample(&msg, &m_info) == ReturnCode_t::RETCODE_OK)
+    {
+        if (m_info.valid_data)
         {
-            if(m_info.sampleKind == ALIVE)
-            {
                 std::unique_lock<std::mutex> lk(*t_send_queue_mutex);
 
                 ++n_msg;
@@ -198,8 +195,6 @@ void @(topic)_Subscriber::SubListener::onNewDataMessage(Subscriber* sub)
                 t_send_queue->push(topic_ID);
                 lk.unlock();
                 t_send_queue_cv->notify_one();
-
-            }
         }
     }
 }
