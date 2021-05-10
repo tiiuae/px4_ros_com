@@ -114,6 +114,7 @@ struct options {
 static void usage(const char *name)
 {
     printf("usage: %s [options]\n\n"
+             "  -a <whitelist>          List of IP numbers of whitelisted interfaces\n"
              "  -b <baudrate>           UART device baudrate. Default 460800\n"
              "  -d <device>             UART device. Default /dev/ttyACM0\n"
              "  -f <sw flow control>    Activates UART link SW flow control\n"
