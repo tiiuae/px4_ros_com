@@ -62,7 +62,7 @@ bool RtpsTopics::init(std::condition_variable* t_send_queue_cv, std::mutex* t_se
     // Initialise subscribers
     std::cout << "\033[0;36m---   Subscribers   ---\033[0m" << std::endl;
 @[for topic in recv_topics]@
-    if (_@(topic)_sub.init(@(rtps_message_id(ids, topic)), t_send_queue_cv, t_send_queue_mutex, t_send_queue, ns)) {
+    if (_@(topic)_sub.init(@(rtps_message_id(ids, topic)), t_send_queue_cv, t_send_queue_mutex, t_send_queue, ns, whitelist)) {
         std::cout << "- @(topic) subscriber started" << std::endl;
     } else {
         std::cerr << "Failed starting @(topic) subscriber" << std::endl;
