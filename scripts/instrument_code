@@ -1,0 +1,46 @@
+#!/usr/bin/python
+
+import sys
+import os
+import glob
+
+files = glob.glob('./src/micrortps_agent/*.cpp')
+os.system("mkdir -p inst_output")
+
+for name in files:
+    # exclude unrelevant
+    if ('PubSubTypes.cpp' in name or
+        '_Subscriber.cpp' in name or
+        '_Publisher.cpp' in name or
+        'microRTPS_' in name or
+        'RptsTopics.cpp' in name):
+       continue
+
+    file = open(name, 'r')
+    outfilename = os.path.basename(name)
+    outfile = open("./inst_output/" + outfilename, 'w')
+    print("open file: " + name)
+    dcdr_state = 0
+    for line in file:
+        if dcdr_state == 0:
+            if ("void px4_msgs::msg::" in line and
+                "::deserialize" in line):
+                dcdr_state = 1
+        elif dcdr_state == 1:
+            if "}" in line:
+                outfile.write('    bool s = dcdr.jump(0);\n')
+                outfile.write('    if (s) {\n')
+                outfile.write('        printf("CRASH OCCURRED in file ' + outfilename + ' \\n");\n')
+                outfile.write('    }\n')
+                dcdr_state = 2
+
+        outfile.write(line)
+
+    file.close()
+    outfile.close()
+
+print("copy modified files into micrortps_agent folder")
+os.system("cp ./inst_output/* ./src/micrortps_agent/")
+os.system("rm -Rf ./inst_output")
+
+

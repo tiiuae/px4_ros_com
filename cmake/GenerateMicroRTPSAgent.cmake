@@ -217,6 +217,8 @@ add_custom_command(
     --agent-outdir ${MICRORTPS_AGENT_DIR}
     --package "px4_msgs"
     --idl-dir ${IDL_DIR}
+    && ${PYTHON_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/scripts/instrument_code
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "Generating micro-RTPS agent code...")
 
