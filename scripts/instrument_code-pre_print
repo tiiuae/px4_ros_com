@@ -27,13 +27,11 @@ for name in files:
                 "::deserialize" in line):
                 dcdr_state = 1
         elif dcdr_state == 1:
-            if "}" in line:
-                outfile.write('    bool s = dcdr.jump(0);\n')
-                outfile.write('    printf("type = %d\\n", s);\n')
-                outfile.write('    if (s) {\n')
-                outfile.write('        printf("CRASH OCCURRED in file ' + outfilename + ' \\n");\n')
-                outfile.write('    }\n')
+            if "{" in line:
                 dcdr_state = 2
+        elif dcdr_state == 2:
+                outfile.write('    printf("dcdr: ' + outfilename + ' \\n");\n')
+                dcdr_state = 3
 
         outfile.write(line)
 
