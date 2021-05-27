@@ -38,6 +38,7 @@ rtps:
     msg: DifferentialPressure
   - id: 17
     msg: DistanceSensor
+    send: true
   - id: 18
     msg: EstimatorInnovations
   - id: 19
@@ -138,6 +139,7 @@ rtps:
     msg: SensorAccel
   - id: 63
     msg: SensorBaro
+    send: true
   - id: 64
     msg: EstimatorSensorBias
   - id: 65
