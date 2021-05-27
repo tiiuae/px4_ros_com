@@ -4,9 +4,9 @@ import sys
 import os
 import glob
 
-files = glob.glob('./src/micrortps_agent/*.cpp')
 os.system("mkdir -p inst_output")
 
+files = glob.glob('./src/micrortps_agent/*.cpp')
 for name in files:
     # exclude unrelevant
     if ('PubSubTypes.cpp' in name or
@@ -25,14 +25,61 @@ for name in files:
         if dcdr_state == 0:
             if ("void px4_msgs::msg::" in line and
                 "::deserialize" in line):
+                outfile.write(line)
+                outfile.write('        uint8_t topic_id,\n')
                 dcdr_state = 1
+                continue
         elif dcdr_state == 1:
             if "{" in line:
                 dcdr_state = 2
         elif dcdr_state == 2:
-                outfile.write('    printf("dcdr: ' + outfilename + ' \\n");\n')
+                outfile.write('    dcdr.jump(topic_id);\n')
                 dcdr_state = 3
 
+        outfile.write(line)
+
+    file.close()
+    outfile.close()
+
+files = glob.glob('./src/micrortps_agent/*PubSubTypes.cpp')
+for name in files:
+    file = open(name, 'r')
+    outfilename = os.path.basename(name)
+    outfile = open("./inst_output/" + outfilename, 'w')
+    print("open file: " + name)
+    dcdr_state = 0
+    for line in file:
+        if dcdr_state == 0:
+            if "p_type->deserialize(deser);" in line:
+                outfile.write('                p_type->deserialize(0, deser);\n')
+                dcdr_state = 1
+                continue
+        outfile.write(line)
+    file.close()
+    outfile.close()
+
+files = glob.glob('./src/micrortps_agent/*.h')
+for name in files:
+    # exclude unrelevant
+    if ('PubSubTypes.h' in name or
+        '_Subscriber.h' in name or
+        '_Publisher.h' in name or
+        'microRTPS_' in name or
+        'RptsTopics.h' in name):
+       continue
+
+    file = open(name, 'r')
+    outfilename = os.path.basename(name)
+    outfile = open("./inst_output/" + outfilename, 'w')
+    print("open file: " + name)
+    dcdr_state = 0
+    for line in file:
+        if dcdr_state == 0:
+            if "eProsima_user_DllExport void deserialize(" in line:
+                outfile.write(line)
+                outfile.write('        uint8_t topic_id,\n')
+                dcdr_state = 1
+                continue
         outfile.write(line)
 
     file.close()

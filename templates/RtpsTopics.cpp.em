@@ -101,6 +101,7 @@ void RtpsTopics::publish(uint8_t topic_ID, char data_buffer[], size_t len)
             @(topic)_msg_t st;
             eprosima::fastcdr::FastBuffer cdrbuffer(data_buffer, len);
             eprosima::fastcdr::Cdr cdr_des(cdrbuffer);
+            st.setTopicId(topic_ID);
             st.deserialize(cdr_des);
 @[    if topic == 'Timesync' or topic == 'timesync']@
             _timesync->processTimesyncMsg(&st);
