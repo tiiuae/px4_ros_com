@@ -308,6 +308,8 @@ int main(int argc, char** argv)
             end = std::chrono::steady_clock::now();
         }
 
+        if (_options.verbose_debug) printf("\033[0;31m[ micrortps_transport ]\ttransport_node returned %d\033[0m\n", length);
+
         if ((receiving && std::chrono::duration<double>(std::chrono::steady_clock::now() - end).count() > WAIT_CNST) ||
             (!running  && loop > 1))
         {
