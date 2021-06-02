@@ -40,7 +40,12 @@
 
 #define BUFFER_SIZE 1024
 #define DEFAULT_UART "/dev/ttyACM0"
-
+#define MAX_MICRORTPS_MSG_SIZE 300
+#if ( (MAX_MICRORTPS_MSG_SIZE*2) > BUFFER_SIZE )
+    #error "BUFFER_SIZE shall be bigger than size of two messages!"
+#endif
+#define BUFFER_FLUSH_THRESHOLD (BUFFER_SIZE - MAX_MICRORTPS_MSG_SIZE)
+#
 class Transport_node
 {
 public:
